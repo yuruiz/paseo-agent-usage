@@ -1,3 +1,6 @@
+import { fleetRegistry } from "./client/fleet-registry";
+import { usageSnapshotRpc } from "./shared/snapshot";
+import { usageRefreshRpc } from "./shared/usage";
 import type { PluginClientContext } from "@getpaseo/plugin/client";
 import { UsageScreen } from "./client/screen";
 import { ConfigScreen } from "./client/config";
@@ -18,6 +21,7 @@ export default function contribute(client: PluginClientContext) {
         context.openScreen({ screenId: "usage" });
       },
     }),
+    fleetRegistry.register(() => client.rpc(usageSnapshotRpc, {}), () => client.rpc(usageRefreshRpc, {})),
   ];
   return () => {
     for (const cleanup of cleanups) {

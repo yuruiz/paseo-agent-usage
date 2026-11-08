@@ -1,3 +1,4 @@
+import { usageSnapshotRpc } from "./shared/snapshot";
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { createUsageService } from "./server/service";
 import { checkForUpdate } from "./server/update-check";
@@ -5,6 +6,7 @@ import { usageAgentRpc, usageAgentsGetRpc, usageAgentsSetRpc, usageHostsListRpc,
 
 export default function contribute(server: PluginServerContext) {
   const service = createUsageService();
+  server.handle(usageSnapshotRpc, () => service.snapshot());
   server.handle(usageReportRpc, (input) => service.report(input.range, input.origin, input.from || input.to ? { from: input.from, to: input.to } : undefined, input.granularity));
   server.handle(usageRefreshRpc, () => service.refresh());
   server.handle(usageAgentRpc, (input) => service.agentReport(input.agent, input.range, input.origin, input.from || input.to ? { from: input.from, to: input.to } : undefined, input.granularity));

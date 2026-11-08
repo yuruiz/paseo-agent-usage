@@ -1,3 +1,6 @@
+import { hostname } from "node:os";
+import type { UsageSnapshot } from "../shared/snapshot";
+import { buildSnapshot, readSourceId } from "./snapshot";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { dashboardConfigSchema } from "../shared/usage";
@@ -11,6 +14,7 @@ import { emptyState, loadState, pluginDataDir, saveState, type CallRecord, type 
 import { num } from "./scan/util";
 
 export interface UsageService {
+  snapshot(): Promise<UsageSnapshot>;
   report(range: UsageRangeKey, origin?: string, custom?: { from?: string; to?: string }, granularity?: UsageGranularity): Promise<UsageReport>;
   agentReport(agent: string, range: UsageRangeKey, origin?: string, custom?: { from?: string; to?: string }, granularity?: UsageGranularity): Promise<UsageAgentReport>;
   agentsGet(): Promise<{ agents: UsageAgentToggle[] }>;
@@ -171,6 +175,7 @@ function parseProjection(text: string): Projection | null {
 
 export function createUsageService(): UsageService {
   const dir = pluginDataDir();
+  let sourceId: Promise<string> | undefined;
   let state: ScanState = emptyState();
   let scanning = false;
   let dirty = false;
@@ -443,6 +448,19 @@ export function createUsageService(): UsageService {
     timer.unref?.();
   }
 
+  async function snapshot(): Promise<UsageSnapshot> {
+    await loaded;
+    await Promise.all([refreshAgentsConfig(false), refreshPrefs(false)]);
+    sourceId ??= readSourceId(dir).catch((error) => { sourceId = undefined; throw error; });
+    const id = await sourceId;
+    if (!state.meta.lastScanAt && !scanning) schedule(0);
+    else if (dirty && !scanning) schedule(2_000);
+    return buildSnapshot(state, enabledHarnesses(), {
+      sourceId: id, label: (prefs.localAlias || hostname()).slice(0, 255),
+      scanning, scanDone: done, scanTotal: total,
+    });
+  }
+
   async function report(range: UsageRangeKey, origin?: string, custom?: { from?: string; to?: string }, granularity?: UsageGranularity): Promise<UsageReport> {
     await loaded;
     await refreshHostConfigs(false);
@@ -606,5 +624,5 @@ export function createUsageService(): UsageService {
     void pullHosts(false);
   });
 
-  return { report, agentReport, agentsGet, agentsSet, refresh, hostsList, hostsSet, hostTest, prefsGet, prefsSet, markDirty, stop };
+  return { snapshot, report, agentReport, agentsGet, agentsSet, refresh, hostsList, hostsSet, hostTest, prefsGet, prefsSet, markDirty, stop };
 }

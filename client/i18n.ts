@@ -1,3 +1,4 @@
+import { browserLanguages } from "./web";
 import { useEffect, useMemo, useState } from "react";
 import { usePrefs } from "./data";
 
@@ -11,12 +12,7 @@ let locale: Locale = resolveLocale("auto");
 /** Best-effort system locale detection (navigator / Intl), defaulting to Chinese. */
 export function detectSystemLocale(): Locale {
   try {
-    const nav = (globalThis as { navigator?: { language?: unknown; languages?: unknown } }).navigator;
-    const candidates: string[] = [];
-    if (nav && Array.isArray(nav.languages)) {
-      for (const item of nav.languages) if (typeof item === "string") candidates.push(item);
-    }
-    if (nav && typeof nav.language === "string") candidates.push(nav.language);
+    const candidates = browserLanguages();
     try {
       const intl = Intl.DateTimeFormat().resolvedOptions().locale;
       if (intl) candidates.push(intl);
@@ -51,6 +47,16 @@ export function getLocale(): Locale {
 }
 
 const zh = {
+  "fleet.all": "所有 Paseo 主机",
+  "fleet.selected": "当前主机 + SSH",
+  "fleet.ready": "{ready}/{total} 台主机已汇总",
+  "fleet.partial": "部分数据 · {ready}/{total} 台主机可用",
+  "fleet.partialHint": "不可用主机保留本次连接中最后成功读取的数据；尚无数据的主机未计入",
+  "fleet.refreshFailed": "刷新失败，请检查主机连接",
+  "fleet.footer": "所有主机 · Token",
+  "fleet.day": "近 24 小时",
+  "fleet.week": "近 7 天",
+  "fleet.month": "近 30 天",
   "common.loading": "加载中…",
   "common.save": "保存",
   "common.saving": "保存中…",
@@ -241,6 +247,16 @@ const zh = {
 export type DictKey = keyof typeof zh;
 
 const en: Record<DictKey, string> = {
+  "fleet.all": "All Paseo hosts",
+  "fleet.selected": "Selected host + SSH",
+  "fleet.ready": "{ready}/{total} hosts included",
+  "fleet.partial": "Partial data · {ready}/{total} hosts available",
+  "fleet.partialHint": "Unavailable hosts retain their last successful snapshot in this connection; hosts without data are excluded",
+  "fleet.refreshFailed": "Refresh failed; check the host connection",
+  "fleet.footer": "All hosts · Tokens",
+  "fleet.day": "Last 24 hours",
+  "fleet.week": "Last 7 days",
+  "fleet.month": "Last 30 days",
   "common.loading": "Loading…",
   "common.save": "Save",
   "common.saving": "Saving…",

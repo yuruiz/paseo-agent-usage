@@ -1,20 +1,10 @@
+import type { UsageBucket, CallRecord, SessionEntry } from "../../shared/records";
+export type { UsageBucket, CallRecord, SessionEntry } from "../../shared/records";
 import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 
 export const STATE_VERSION = 13;
-
-/** Usage aggregate for one hour bucket. Bucket keys start with an hour key `YYYY-MM-DDTHH`. */
-export interface UsageBucket {
-  r: number;
-  i: number;
-  o: number;
-  cr: number;
-  cw: number;
-  rz: number;
-  cost: number;
-  credits: number;
-}
 
 /** The last usage recorded for one Claude message id, so streaming snapshots replace instead of add. */
 export interface RecentContribution {
@@ -29,45 +19,11 @@ export interface RecentContribution {
   rz: number;
 }
 
-/** One normalized model call, kept for the per-agent request log (bounded ring buffer). */
-export interface CallRecord {
-  t: number;
-  m: string;
-  p: string;
-  s: string;
-  i: number;
-  o: number;
-  cr: number;
-  cw: number;
-  rz: number;
-  cost: number;
-  credits: number;
-  id?: string;
-}
-
 export interface CodexForkState {
   forked: boolean;
   point: number | null;
   baselineDone: boolean;
   firstTs: number | null;
-}
-
-/** Per-session aggregate, keyed `harness \u0001 sessionId` in `ScanState.sessions`.
- *  `s`/`e` are the first/last counted call timestamps; fields mirror UsageBucket.
- *  `title` is a short human label (first user message or summary), first win. */
-export interface SessionEntry {
-  s: number;
-  e: number;
-  r: number;
-  i: number;
-  o: number;
-  cr: number;
-  cw: number;
-  rz: number;
-  cost: number;
-  credits: number;
-  p: string;
-  title?: string;
 }
 
 /** Keeps the sessions index bounded (≈1MB): counted requests drop dead entries,

@@ -26,14 +26,16 @@ Paseo plugin requirements we must follow when developing, reviewing, and releasi
 ## Security
 
 - Session logs are private user data: the plugin only reads them locally, or over SSH from
-  hosts the user configured, and never transmits their contents anywhere. Never log or echo
+  hosts the user configured, and never transmits raw log contents anywhere. The multi-host
+  snapshot RPC sends only usage metadata to the connected Paseo client, excluding prompt-derived titles. Never log or echo
   log lines, prompts, file contents, or per-request text.
 - SSH access is limited to user-configured hosts. Passwords stay on the daemon host
   (`hosts.json`, mode 600) or come from a user-supplied password command; never print,
   log, or quote credentials, key material, or raw remote command output.
 - Remote write access is limited to the incremental cache directory; remote logs stay
   read-only.
-- The only network destinations are the user-configured SSH hosts and the version check
+- Network destinations are existing authenticated Paseo connections for local-only usage
+  snapshots, user-configured SSH hosts, and the version check
   (`raw.githubusercontent.com`, falling back to `api.github.com`), which reads public files
   and sends no user data. Document every network destination and data flow in `OVERVIEW.md`.
 - No hidden network calls, no telemetry, no `eval` of dynamic or remote code, no shell

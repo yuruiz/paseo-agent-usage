@@ -1,7 +1,9 @@
+import { FLEET_ORIGIN, isFleetOrigin } from "../shared/fleet";
+import { useFleet } from "./fleet";
 import { openExternalUrl, type PluginScreenProps } from "@getpaseo/plugin/client";
 import { Icon, useToast } from "@getpaseo/plugin/client/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { TextStyle, ViewStyle } from "react-native";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import type { UsageGranularity, UsageRangeKey } from "../shared/usage";
@@ -55,7 +57,7 @@ export function UsageScreen(props: PluginScreenProps) {
   const { theme, layout } = props;
   const [range, setRange] = useState<UsageRangeKey | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [device, setDevice] = useState<string>("aggregate");
+  const [device, setDevice] = useState<string>(FLEET_ORIGIN);
   const [tab, setTab] = useState<string>("overview");
   const [granularity, setGranularity] = useState<UsageGranularity | null>(null);
   const [customFrom, setCustomFrom] = useState<string>("");
@@ -89,7 +91,8 @@ export function UsageScreen(props: PluginScreenProps) {
     setOpenSelect(null);
     setShowCustomPicker(false);
   }
-  const refreshUsage = useRefreshUsage();
+  const refreshUsage = useRefreshUsage(deviceOrigin);
+  const fleetQuery = useFleet();
   const { t } = useI18n();
 
   async function dismissCommunityBanner() {
@@ -196,14 +199,23 @@ export function UsageScreen(props: PluginScreenProps) {
 
   const data = query.data;
   const deviceTabs = useMemo(() => {
-    const list: Array<{ id: string; label: string }> = [{ id: "aggregate", label: t("origin.aggregate") }];
+    const list: Array<{ id: string; label: string }> = [
+      { id: FLEET_ORIGIN, label: t("fleet.all") },
+      { id: "aggregate", label: t("fleet.selected") },
+    ];
+    for (const host of fleetQuery.fleet.hosts) {
+      list.push({ id: host.name, label: fleetQuery.fleet.labels.get(host.name) ?? host.name });
+    }
     for (const origin of data?.origins ?? []) {
-      list.push({ id: origin.id, label: origin.id === "local" ? localLabel : origin.label });
+      if (!isFleetOrigin(origin.id)) list.push({ id: origin.id, label: origin.id === "local" ? localLabel : origin.label });
     }
     return list;
-  }, [data?.origins, t, localLabel]);
-  const hasDevice = device === "aggregate" || (data?.origins ?? []).some((origin) => origin.id === device);
-  const activeDevice = hasDevice ? device : "aggregate";
+  }, [data?.origins, t, localLabel, fleetQuery.fleet]);
+  const hasDevice = deviceTabs.some((item) => item.id === device);
+  const activeDevice = hasDevice ? device : FLEET_ORIGIN;
+  useEffect(() => {
+    if (isFleetOrigin(device) && device !== FLEET_ORIGIN && !hasDevice) setDevice(FLEET_ORIGIN);
+  }, [device, hasDevice]);
   const selectedOrigin = (data?.origins ?? []).find((origin) => origin.id === activeDevice) ?? null;
   const failedOrigins = (data?.origins ?? []).filter((origin) => origin.id !== "local" && origin.status === "error");
 
@@ -297,10 +309,11 @@ export function UsageScreen(props: PluginScreenProps) {
                 accessibilityLabel={t("app.a11yRefresh")}
                 style={styles.refreshButton}
                 onPress={() => {
-                  void refreshUsage({}).then(() => {
-                    void query.refetch();
-                    void agentQuery.refetch();
-                  });
+                  void refreshUsage({}).then(async (result) => {
+                    if (isFleetOrigin(deviceOrigin) && !result.started) throw new Error("No host available");
+                    await Promise.all([query.refetch(), agentQuery.refetch()]);
+                    await queryClient.invalidateQueries({ queryKey: ["agent-usage-fleet"] });
+                  }).catch(() => toast.error(t("fleet.refreshFailed")));
                 }}
               >
                 <Text style={styles.refreshText}>{query.isFetching ? t("app.refreshing") : t("app.refresh")}</Text>
@@ -380,10 +393,16 @@ export function UsageScreen(props: PluginScreenProps) {
           />
         ) : null}
 
+        {isFleetOrigin(activeDevice) ? (
+          <Text style={styles.footer}>
+            {t(fleetQuery.fleet.partial ? "fleet.partial" : "fleet.ready", { ready: fleetQuery.fleet.ready, total: fleetQuery.fleet.total })}
+            {fleetQuery.fleet.partial ? ` · ${t("fleet.partialHint")}` : ""}
+          </Text>
+        ) : null}
         {activeDevice !== "aggregate" && selectedOrigin ? (
           <Text style={styles.footer}>
             {selectedOrigin.id === "local" ? localLabel : selectedOrigin.label} · {originStatusText(t, selectedOrigin.status, selectedOrigin.lastPullAt)}
-            {selectedOrigin.lastError ? ` · ${selectedOrigin.lastError}` : ""}
+            {selectedOrigin.lastError ? ` · ${isFleetOrigin(activeDevice) ? t("fleet.partialHint") : selectedOrigin.lastError}` : ""}
           </Text>
         ) : null}
         {activeDevice === "aggregate"

@@ -9,10 +9,10 @@
 - OpenCode：`~/.local/share/opencode/opencode.db`（通过 node:sqlite 只读；reasoning token 计入输出，与计费口径一致）
 - Pi：`~/.pi/agent/sessions`（含 forks 与子会话目录；跨文件按消息去重，fork 复制段不重复计）
 
-界面：侧边栏底部「用量」行显示今日 token；点击打开全屏看板。看板包含 6 个预设页（总览、构成、效率、节奏、会话、对比），也支持自定义页面（空白新建或复制当前页，改名、排序、隐藏、删除；自定义页只在聚合视图生效，Agent 视图复用预设页）。每张图表都是卡片，可上移/下移、整行/半宽、隐藏或移除，布局按页面保存在本机偏好里。
+界面：侧边栏底部「用量」同时显示所有 Paseo 主机近 24 小时、7 天和 30 天的 token 总量；点击打开全屏看板。看板包含 6 个预设页（总览、构成、效率、节奏、会话、对比），也支持自定义页面（空白新建或复制当前页，改名、排序、隐藏、删除；自定义页只在聚合视图生效，Agent 视图复用预设页）。每张图表都是卡片，可上移/下移、整行/半宽、隐藏或移除，布局按页面保存在本机偏好里。
 
 - 看板顶部展示可关闭的「开源共创」横幅，可直接前往 GitHub 提 Issue 或提 PR；关闭状态会持久化并永久隐藏该横幅，配置页仍保留按问题、功能需求和 Agent 接入分类的 Issue 模板入口
-- 顶部用紧凑工具栏提供设备选择（聚合 / 本机 / 各远端）、Agent 选择（总览 + Claude Code / Codex / OpenCode / Pi）、时间范围与粒度；页面内的页签和卡片负责分析内容
+- 顶部用紧凑工具栏提供设备选择（所有 Paseo 主机 / 单台 Paseo 主机 / 当前主机 + SSH / 本机 / 各 SSH 远端）、Agent 选择（总览 + Claude Code / Codex / OpenCode / Pi）、时间范围与粒度；页面内的页签和卡片负责分析内容
 - 总览：用量脉搏、趋势（全部/非缓存 Token 堆叠、请求、成本、7 日预测）、周期对比、异常日、Agent 份额、主机对比
 - 构成：Token 构成、模型/项目排行与集中度、Agent × 模型、项目 × Agent、矩形占比
 - 效率：缓存命中率、缓存读写、请求均量、输入输出结构、模型效率象限、成本趋势/效率、累计曲线
@@ -29,6 +29,15 @@
 - **通用**：界面语言（跟随系统 / 中文 / English，自动检测系统语言）与**定时刷新**（关闭 / 5 分钟 / 15 分钟 / **30 分钟（默认）** / 1 小时 / 6 小时 / 24 小时；定时自动扫描本地日志并同步远端主机）；还可自定义**本机标签**（设备选择器与请求日志里默认「本机」的显示名称，留空恢复默认，仅保存于本机偏好文件），以及**默认时间范围与趋势粒度**（打开用量页时的初始范围/粒度，如「当日 + 小时」「近 7 天 + 月」等，未设置时为近 7 天 + 日）；还可设置**月度预算（USD，可选）**，用于预算卡的燃烧率与月末预测
 - **Agent 开关**：关闭的 Agent 不展示、不拉取
 - **远端主机（SSH）**：增删改与测试连接
+
+## 多个 Paseo 主机
+
+在每台主机安装此版本，并在同一 Paseo 客户端连接这些主机。插件会自动汇总已加载的安装实例，无需填写 SSH 地址或新增凭据。用量页默认选择「所有 Paseo 主机」，可切换单台 Paseo 主机，或「当前主机 + SSH」查看原有统计。footer 始终显示所有 Paseo 主机的总量，不跟随看板的设备筛选。
+
+- 每台主机只提供本机用量，不包含它通过 SSH 采集的数据，避免递归或重复汇总。同一数据目录的多个安装实例或连接只计一次；如果两台独立机器复制了同一批日志，其用量仍分别计算。不要把数据目录中的 `source-id` 复制给另一台机器。
+- 24h 为当前小时及之前 23 个小时桶；7d 和 30d 分别为客户端时区内包含今天的 7 / 30 个自然日。Token 总量为输入、输出、缓存读取、缓存写入之和，reasoning 不重复计入。跨时区数据先转换为 UTC 再按客户端时区汇总；旧扫描缓存按当地小时存储，夏令时重复小时的原始歧义无法恢复。
+- 快照约每 30 秒读取一次，扫描时约每 2.5 秒读取一次；「刷新」会请求各主机重新扫描。掉线或请求失败时保留当前连接生命周期内最后成功读取的快照，并标明「部分数据」及可用主机数；从未读到数据的主机不计入。应用重启、移除插件或切换连接后，离线快照不保证保留。未连接或未加载此版本插件的主机不在汇总范围内。
+- 汇总发生在客户端内存，不把某台主机的数据写入另一台主机，也不增加外部服务。快照沿各安装实例已有的 Paseo 认证连接传输，包含小时用量、模型/项目标签、会话 ID、时间与数值统计，不包含会话标题、prompt、代码、原始日志或凭据。图表及百分位值在合并后重新计算。
 
 ## 远端统计（SSH）
 
@@ -53,8 +62,8 @@
 ## 数据与权限
 
 - 读取：本机（及各远端主机）的本地会话日志
-- 写入：daemon 所在机器的插件数据目录（扫描状态与主机配置）；远端仅写增量缓存
-- 网络：插件自身的网络访问只有版本更新检查（每小时最多一次，仅读取公开的 registry 记录与对应提交的 package.json，来自 raw.githubusercontent.com、api.github.com，不发送任何数据）；SSH 采集通过系统 ssh 命令连接你配置的主机
+- 写入：daemon 所在机器的插件数据目录（扫描状态、主机配置与稳定来源 ID）；远端仅写增量缓存
+- 网络：跨主机快照使用已有的 Paseo 认证连接（见上文）；额外的 HTTP 访问为版本更新检查（每小时最多一次，仅读取公开的 registry 记录与对应提交的 package.json，来自 raw.githubusercontent.com、api.github.com，不发送任何数据）；SSH 采集通过系统 ssh 命令连接你配置的主机
 - 不读取、不保存、不发送任何登录凭据；不发送 prompts、代码或日志内容到任何服务
 - 支持 macOS 与 Linux；需要 Paseo 0.13.0-beta.1 或更高版本
 
@@ -71,10 +80,10 @@ Data sources (read locally on the daemon host; remote machines are collected ove
 - OpenCode: `~/.local/share/opencode/opencode.db` (read-only via node:sqlite; reasoning tokens count as output, matching the billing basis)
 - Pi: `~/.pi/agent/sessions` (including forks and sub-session directories; messages are deduplicated across files, so copied fork segments are not counted twice)
 
-Interface: the "Usage" row at the bottom of the sidebar shows today's tokens; clicking it opens a full-screen dashboard. The dashboard has six preset pages (Overview, Composition, Efficiency, Rhythm, Sessions, Compare) and supports custom pages (create blank or duplicate the current page, rename, reorder, hide, delete; custom pages live in the aggregate view, while the agent view reuses the preset pages). Every chart is a card that can move up/down, switch full/half width, hide or be removed; layouts are saved per page in local preferences.
+Interface: the "Usage" footer simultaneously shows 24h, 7d and 30d token totals across Paseo hosts; clicking it opens a full-screen dashboard. The dashboard has six preset pages (Overview, Composition, Efficiency, Rhythm, Sessions, Compare) and supports custom pages (create blank or duplicate the current page, rename, reorder, hide, delete; custom pages live in the aggregate view, while the agent view reuses the preset pages). Every chart is a card that can move up/down, switch full/half width, hide or be removed; layouts are saved per page in local preferences.
 
 - The dashboard header shows a dismissible open-source co-creation banner with direct GitHub issue and pull-request links; dismissal is persisted and hides the banner permanently, while Settings keeps the issue-template entries for bugs, feature requests, and new agents
-- Device selector (aggregate / local / each remote), agent selector (overview + Claude Code / Codex / OpenCode / Pi), range and granularity stay in a compact toolbar; page tabs and cards hold the analysis
+- Device selector (all Paseo hosts / each Paseo host / selected host + SSH / local / each SSH remote), agent selector (overview + Claude Code / Codex / OpenCode / Pi), range and granularity stay in a compact toolbar; page tabs and cards hold the analysis
 - Overview: usage pulse, token-type stack / requests / cost / 7-day forecast trend, period comparison, outlier days, agent share, host comparison
 - Composition: token mix, model/project ranking with concentration, agent × model and project × agent heatmaps, share map
 - Efficiency: cache hit and cache read/write, tokens per request, input/output structure, model efficiency map, cost trend/efficiency, cumulative usage
@@ -91,6 +100,15 @@ Settings (the "Settings" entry at the top right of the usage page, or Paseo Sett
 - **General**: interface language (follow system / Chinese / English, auto-detected) and **auto refresh** (off / 5 min / 15 min / **30 min (default)** / 1 hour / 6 hours / 24 hours; periodically scans local logs and syncs remote hosts); you can also set a custom **local device label** (the display name used instead of the default "本机 / Local" in the device selector and request log; leave empty to restore the default, stored only in the local preference file), and a **default range and trend granularity** (the initial range/granularity when the usage page opens, such as "today + hour" or "last 7 days + month"; unset means last 7 days + day); an optional **monthly budget (USD)** drives the budget card burn rate and month-end projection
 - **Agent toggles**: disabled agents are neither shown nor fetched
 - **Remote hosts (SSH)**: add, edit, delete, and test connections
+
+## Multiple Paseo hosts
+
+Install this version on each host and connect those hosts in the same Paseo client. Loaded installations participate automatically, without additional SSH addresses or credentials. The dashboard defaults to **All Paseo hosts**; choose an individual Paseo host or **Selected host + SSH** for the existing view. The footer always shows all Paseo hosts, independently of the dashboard device filter.
+
+- Each host contributes only its local usage, excluding its SSH projections to prevent recursive or duplicate aggregation. Alternate installations or connections sharing one data directory count once. Independent machines with copies of the same logs still count separately; do not copy the data directory's `source-id` to another machine.
+- 24h covers the current hourly bucket and the preceding 23; 7d and 30d cover 7 / 30 calendar days including today in the client's time zone. Totals add input, output, cache reads and cache writes; reasoning is not counted again. Host hours travel as UTC before conversion to client time. Existing local-hour caches cannot recover ambiguity from repeated daylight-saving hours.
+- Snapshots refresh about every 30 seconds, or every 2.5 seconds during scanning. Refresh requests a scan on every host. Failed or offline sources retain their last successful snapshot within the current connection lifecycle, with a partial-data warning and available-host count. Sources without a snapshot are excluded. Offline snapshots are not guaranteed after app restart, plugin removal or connection replacement. Disconnected hosts whose upgraded plugin has not loaded are outside the aggregate.
+- Aggregation runs in client memory, without writing one host's data to another or adding an external service. Snapshots use each installation's existing authenticated Paseo connection and contain hourly usage, model/project labels, session IDs, timestamps and numeric statistics. They omit session titles, prompts, code, raw logs and credentials. Charts and percentiles are recomputed after merging.
 
 ## Remote statistics (SSH)
 
@@ -115,7 +133,7 @@ Usage from other machines can be counted in as well. Two ways to configure it:
 ## Data and permissions
 
 - Reads: local session logs on this machine (and on each remote host)
-- Writes: the plugin data directory on the daemon host (scan state and host configuration); on remotes only the incremental cache
-- Network: the plugin's own network access is only the update check (at most once an hour, reading only the public registry record and the pinned package.json from raw.githubusercontent.com and api.github.com, sending no data); SSH collection connects to your configured hosts through the system ssh command
+- Writes: the plugin data directory on the daemon host (scan state, host configuration and stable source identity); on remotes only the incremental cache
+- Network: cross-host snapshots use the existing authenticated Paseo connections described above; additional HTTP access is the update check (at most once an hour, reading only the public registry record and the pinned package.json from raw.githubusercontent.com and api.github.com, sending no data); SSH collection connects to your configured hosts through the system ssh command
 - No login credentials are read, stored, or sent; no prompts, code, or log content is sent to any service
 - Supports macOS and Linux; requires Paseo 0.13.0-beta.1 or later
