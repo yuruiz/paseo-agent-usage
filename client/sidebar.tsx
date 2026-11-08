@@ -1,29 +1,40 @@
 import type { PluginSidebarItemProps } from "@getpaseo/plugin/client";
-import { Pressable, Text } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useMemo } from "react";
 import { useFleet } from "./fleet";
 import { footerTotals } from "../shared/fleet";
-import { formatTokens } from "./format";
 import { useI18n } from "./i18n";
 
-export function UsageSidebarItem({ openScreen, theme, layout }: PluginSidebarItemProps) {
+const tokenFormat = new Intl.NumberFormat("en", { notation: "compact", maximumSignificantDigits: 2 });
+
+export function UsageSidebarItem({ openScreen, theme }: PluginSidebarItemProps) {
   const { fleet } = useFleet();
   const { t } = useI18n();
   const totals = useMemo(() => footerTotals(fleet.state), [fleet]);
   const ranges = ["24h", "7d", "30d"] as const;
   const labels = ["fleet.day", "fleet.week", "fleet.month"] as const;
-  const summary = ranges.map((range) => `${range} ${fleet.hasData ? formatTokens(totals[range]) : "—"}`).join(" · ");
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={ranges.map((range, index) => `${t(labels[index])} ${fleet.hasData ? totals[range] : "—"}`).join(", ")}
       onPress={() => openScreen({ screenId: "usage" })}
-      style={{ paddingHorizontal: layout.compact ? 8 : 12, paddingVertical: 4 }}
+      style={{
+        width: "100%", minHeight: 28, paddingHorizontal: 8, paddingVertical: 4,
+        flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8,
+      }}
     >
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}
-        style={{ color: theme.colors.foregroundMuted, fontSize: 11, lineHeight: 16, fontVariant: ["tabular-nums"] }}>
-        {summary}
-      </Text>
+      {ranges.map((range) => (
+        <View key={range} style={{ flexDirection: "row", alignItems: "baseline", gap: 5, minWidth: 0 }}>
+          <Text numberOfLines={1}
+            style={{ color: theme.colors.foreground, fontSize: 12, lineHeight: 18, fontWeight: "500", fontVariant: ["tabular-nums"] }}>
+            {fleet.hasData ? tokenFormat.format(totals[range]) : "—"}
+          </Text>
+          <Text numberOfLines={1}
+            style={{ color: theme.colors.foregroundMuted, fontSize: 11, lineHeight: 18 }}>
+            {range}
+          </Text>
+        </View>
+      ))}
     </Pressable>
   );
 }

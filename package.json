@@ -1,7 +1,7 @@
 {
   "name": "paseo-agent-usage",
-  "version": "0.8.1",
-  "description": "Coding-agent token usage with single-line 24h, 7d and 30d footer totals, automatic multi-host aggregation, SSH collection, and customizable dashboards.",
+  "version": "0.8.2",
+  "description": "Coding-agent token usage with grouped single-line 24h, 7d and 30d footer totals, automatic multi-host aggregation, SSH collection, and customizable dashboards.",
   "license": "MIT",
   "repository": {
     "type": "git",

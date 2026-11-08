@@ -2,7 +2,7 @@
 
 Paseo plugin: token usage statistics for coding agents, computed from their local session logs, with optional SSH collection from remote machines.
 
-- Sidebar footer shows only `24h <tokens> · 7d <tokens> · 30d <tokens>` on one line across Paseo hosts; clicking opens the dashboard
+- Sidebar footer shows only three spaced groups on one line, such as `1.2M 24h`, `8.4M 7d`, and `32M 30d`, with prominent values and muted time labels across Paseo hosts; clicking opens the dashboard
 - The dashboard header shows a dismissible open-source co-creation banner with direct GitHub issue and pull-request links; dismissing it hides the banner permanently, while Settings keeps both links
 - Dashboard with six preset pages: Overview, Composition, Efficiency, Rhythm, Sessions, Compare
 - Every chart is a card: move up/down, switch full/half width, hide or remove; the layout is saved per page
@@ -50,7 +50,7 @@ Install this version on each host and connect those hosts in the same Paseo clie
 
 Paseo 插件：基于各编码 Agent 本地会话日志统计 token 用量，支持通过 SSH 采集远端机器数据。
 
-- 侧边栏底部仅用一行显示 `24h <Token 数> · 7d <Token 数> · 30d <Token 数>`，汇总所有 Paseo 主机，点击打开看板
+- 侧边栏底部仅用一行显示 三组留有间距的数据，例如 `1.2M 24h`、`8.4M 7d`、`32M 30d`，数字突出、时间标签弱化，汇总所有 Paseo 主机，点击打开看板
 - 看板顶部展示可关闭的开源共创横幅，可直接前往 GitHub 提 Issue 或提 PR；关闭后永久隐藏，配置页仍保留反馈入口
 - 看板包含 6 个预设页：总览、构成、效率、节奏、会话、对比
 - 每张图表都是卡片：可上移/下移、切换整行/半宽、隐藏或移除；布局按页面保存

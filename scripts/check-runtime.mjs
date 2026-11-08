@@ -97,13 +97,17 @@ try {
     for (const theme of themes) {
       await act(async () => { renderer.update(render(compact, theme)); });
       const texts = renderer.root.findAllByType("Text");
-      assert.equal(texts.length, 1, "footer has one text row without a title or status");
-      assert.equal(texts[0].props.children, "24h 300 · 7d 300 · 30d 300");
-      assert.equal(texts[0].props.numberOfLines, 1);
+      assert.deepEqual(texts.map(text => text.props.children), ["300", "24h", "300", "7d", "300", "30d"]);
+      for (let index = 0; index < texts.length; index++) {
+        assert.equal(texts[index].props.numberOfLines, 1);
+        assert.equal(texts[index].props.style.color, index % 2 === 0 ? theme.colors.foreground : theme.colors.foregroundMuted);
+      }
       assert.equal(renderer.root.findAllByType("SidebarRow").length, 0, "footer has no navigation title row");
       for (const text of texts) assert(Object.values(theme.colors).includes(text.props.style.color), "footer text follows theme");
       const row = renderer.root.findByType("Pressable");
-      assert.equal(row.props.style.paddingHorizontal, compact ? 8 : 12);
+      assert.equal(row.props.style.flexDirection, "row");
+      assert.equal(row.props.style.gap, 8);
+      assert.equal(row.props.style.paddingHorizontal, 8);
       await act(async () => { row.props.onPress(); });
     }
   }
@@ -112,7 +116,7 @@ try {
   await act(async () => { await queryClient.refetchQueries({ queryKey: ["agent-usage-fleet"] }); });
   await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
   assert.equal(report.data?.totals.input, 300, "offline host retains the last successful snapshot");
-  assert.equal(renderer.root.findByType("Text").props.children, "24h 300 · 7d 300 · 30d 300", "offline status does not add footer content");
+  assert.deepEqual(renderer.root.findAllByType("Text").map(text => text.props.children), ["300", "24h", "300", "7d", "300", "30d"], "offline status does not add footer content");
   assert.equal(report.fleet.partial, true, "partial status remains available to the dashboard");
   failSecond = false;
   snapshots[1] = { ...snapshots[1], generatedAt: Date.now() };
