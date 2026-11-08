@@ -77,8 +77,8 @@ try {
     return null;
   }
   const themes = [
-    { colors: { foreground: "#111111", foregroundMuted: "#555555" } },
-    { colors: { foreground: "#ffffff", foregroundMuted: "#bbbbbb" } },
+    { colors: { foreground: "#111111", foregroundMuted: "#555555", surface1: "#eeeeee" } },
+    { colors: { foreground: "#ffffff", foregroundMuted: "#bbbbbb", surface1: "#222222" } },
   ];
   let opened = 0;
   const render = (compact, theme) => React.createElement(QueryClientProvider, { client: queryClient },
@@ -105,9 +105,13 @@ try {
       assert.equal(renderer.root.findAllByType("SidebarRow").length, 0, "footer has no navigation title row");
       for (const text of texts) assert(Object.values(theme.colors).includes(text.props.style.color), "footer text follows theme");
       const row = renderer.root.findByType("Pressable");
-      assert.equal(row.props.style.flexDirection, "row");
-      assert.equal(row.props.style.gap, 8);
-      assert.equal(row.props.style.paddingHorizontal, 8);
+      const idle = row.props.style({ pressed: false, hovered: false });
+      assert.equal(idle.flexDirection, "row");
+      assert.equal(idle.gap, 8);
+      assert.equal(idle.paddingHorizontal, 8);
+      assert.equal(idle.backgroundColor, "transparent");
+      assert.equal(row.props.style({ pressed: false, hovered: true }).backgroundColor, theme.colors.surface1);
+      assert.equal(row.props.style({ pressed: true }).backgroundColor, theme.colors.surface1);
       await act(async () => { row.props.onPress(); });
     }
   }

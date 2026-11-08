@@ -1,5 +1,5 @@
 import type { PluginSidebarItemProps } from "@getpaseo/plugin/client";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { useMemo } from "react";
 import { useFleet } from "./fleet";
 import { footerTotals } from "../shared/fleet";
@@ -18,10 +18,11 @@ export function UsageSidebarItem({ openScreen, theme }: PluginSidebarItemProps) 
       accessibilityRole="button"
       accessibilityLabel={ranges.map((range, index) => `${t(labels[index])} ${fleet.hasData ? totals[range] : "—"}`).join(", ")}
       onPress={() => openScreen({ screenId: "usage" })}
-      style={{
-        width: "100%", minHeight: 28, paddingHorizontal: 8, paddingVertical: 4,
+      style={({ hovered, pressed }: PressableStateCallbackType & { hovered?: boolean }) => ({
+        width: "100%", minHeight: 28, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+        backgroundColor: hovered || pressed ? theme.colors.surface1 : "transparent",
         flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8,
-      }}
+      })}
     >
       {ranges.map((range) => (
         <View key={range} style={{ flexDirection: "row", alignItems: "baseline", gap: 5, minWidth: 0 }}>
