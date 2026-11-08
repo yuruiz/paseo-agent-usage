@@ -97,9 +97,10 @@ try {
     for (const theme of themes) {
       await act(async () => { renderer.update(render(compact, theme)); });
       const texts = renderer.root.findAllByType("Text");
-      const content = texts.map((text) => text.props.children);
-      for (const label of ["24h", "7d", "30d"]) assert(content.includes(label));
-      assert.equal(content.filter(value => value === "300").length, 3, "all three footer totals render together");
+      assert.equal(texts.length, 1, "footer has one text row without a title or status");
+      assert.equal(texts[0].props.children, "24h 300 · 7d 300 · 30d 300");
+      assert.equal(texts[0].props.numberOfLines, 1);
+      assert.equal(renderer.root.findAllByType("SidebarRow").length, 0, "footer has no navigation title row");
       for (const text of texts) assert(Object.values(theme.colors).includes(text.props.style.color), "footer text follows theme");
       const row = renderer.root.findByType("Pressable");
       assert.equal(row.props.style.paddingHorizontal, compact ? 8 : 12);
@@ -111,12 +112,13 @@ try {
   await act(async () => { await queryClient.refetchQueries({ queryKey: ["agent-usage-fleet"] }); });
   await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
   assert.equal(report.data?.totals.input, 300, "offline host retains the last successful snapshot");
-  assert(renderer.root.findAllByType("Text").some(text => String(text.props.children).includes("Partial data")));
+  assert.equal(renderer.root.findByType("Text").props.children, "24h 300 · 7d 300 · 30d 300", "offline status does not add footer content");
+  assert.equal(report.fleet.partial, true, "partial status remains available to the dashboard");
   failSecond = false;
   snapshots[1] = { ...snapshots[1], generatedAt: Date.now() };
   await act(async () => { await queryClient.refetchQueries({ queryKey: ["agent-usage-fleet"] }); });
   await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
-  assert(!renderer.root.findAllByType("Text").some(text => String(text.props.children).includes("Partial data")), "reconnect clears partial status");
+  assert.equal(report.fleet.partial, false, "reconnect clears dashboard partial status");
   await act(async () => { cleanups.pop()(); });
   assert.equal(report.data?.totals.input, 100, "unloading a host removes its contribution");
   console.log("runtime checks passed (independent host bundles, real React hooks, shared requests, footer, themes, compact layout, offline/reconnect, cleanup)");
